@@ -8,7 +8,6 @@
     border: 2px solid $white;
     background: $white;
     vertical-align: top;
-    margin-top: 8px;
 }
 .cms-btn {
     .cms-pagetree-node-state {
@@ -36,6 +35,10 @@
     &-published {
         border-color: $color-success;
         background-color: $color-success;
+    }
+    &-draft {
+        border-color: $color-primary;
+        background-color: $white;
     }
     &-dirty {
         animation: pulsate 2.5s ease-out infinite;
