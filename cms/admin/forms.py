@@ -290,7 +290,7 @@ class AddPageForm(BasePageContentForm):
 
         if 'meta_description' in data:
             title_kwargs['meta_description'] = data['meta_description']
-        return api.create_title(**title_kwargs)
+        return api.create_page_content(**title_kwargs)
 
     def from_source(self, source, parent=None):
         new_page = source.copy(
@@ -331,7 +331,7 @@ class AddPageForm(BasePageContentForm):
             new_page.save()
 
         translation = self.create_translation(new_page)
-        new_page.title_cache[translation.language] = translation
+        new_page.page_content_cache[translation.language] = translation
 
         if source:
             extension_pool.copy_extensions(
@@ -399,7 +399,7 @@ class AddPageTypeForm(AddPageForm):
             root_page.save()
 
         if not root_page.has_translation(self._language):
-            api.create_title(
+            api.create_page_content(
                 language=self._language,
                 title=gettext('Page Types'),
                 page=root_page,

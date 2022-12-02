@@ -705,7 +705,7 @@ class PageAdmin(admin.ModelAdmin):
 
     def edit_title_fields(self, request, page_id, language):
         page = self.get_object(request, object_id=page_id)
-        translation = page.get_title_obj(language, fallback=False)
+        translation = page.get_content_obj(language, fallback=False)
 
         if not self.has_change_permission(request, obj=page):
             return HttpResponseForbidden(force_str(_("You do not have permission to edit this page")))
@@ -807,7 +807,7 @@ class PageContentAdmin(admin.ModelAdmin):
         obj = super().get_object(request, object_id, from_field)
 
         if obj:
-            obj.page.title_cache[obj.language] = obj
+            obj.page.page_content_cache[obj.language] = obj
         return obj
 
     def get_admin_url(self, action, *args):
@@ -959,15 +959,12 @@ class PageContentAdmin(admin.ModelAdmin):
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
         """
-        The 'change' admin view for the Page model.
+        The 'change' admin view for the PageContent model.
         """
         if extra_context is None:
             extra_context = {'basic_info': True}
 
         obj = self.get_object(request, object_id=object_id)
-
-        if not self.has_change_permission(request, obj):
-            raise PermissionDenied
 
         if obj is None:
             raise self._get_404_exception(object_id)
@@ -1058,9 +1055,6 @@ class PageContentAdmin(admin.ModelAdmin):
             return False
         site = get_site(request)
         return page_permissions.user_can_delete_page(request.user, page=obj.page, site=site)
-
-    def has_view_permission(self, request, obj=None):
-        return self.has_change_permission(request, obj)
 
     def has_change_advanced_settings_permission(self, request, obj=None):
         if not obj:
@@ -1203,7 +1197,7 @@ class PageContentAdmin(admin.ModelAdmin):
         if not target_language or target_language not in get_language_list(site_id=page.node.site_id):
             return HttpResponseBadRequest(force_str(_("Language must be set to a supported language!")))
 
-        target_page_content = page.get_title_obj(target_language, fallback=False)
+        target_page_content = page.get_content_obj(target_language, fallback=False)
 
         for placeholder in source_page_content.get_placeholders():
             # TODO: Handle missing placeholder
@@ -1397,15 +1391,14 @@ class PageContentAdmin(admin.ModelAdmin):
         user_can_add = page_permissions.user_can_add_subpage
         user_can_change = page_permissions.user_can_change_page
         user_can_change_advanced = page_permissions.user_can_change_page_advanced_settings
-        page_content_type = ContentType.objects.get_for_model(PageContent)
 
         def render_page_row(page):
-            page.title_cache = {trans.language: trans for trans in page.filtered_translations}
+            page.page_content_cache = {trans.language: trans for trans in page.filtered_translations}
 
             for _language in languages:
                 # EmptyPageContent is used to prevent the cms from trying
                 # to find a translation in the database
-                page.title_cache.setdefault(_language, EmptyPageContent(language=_language, page=page))
+                page.page_content_cache.setdefault(_language, EmptyPageContent(language=_language, page=page))
 
             has_move_page_permission = page_permissions.user_can_move_page(request.user, page, site=site)
 
@@ -1420,8 +1413,7 @@ class PageContentAdmin(admin.ModelAdmin):
                 'opts': self.opts,
                 'site': site,
                 'page': page,
-                'page_content': page.get_title_obj(language, fallback=False),  # Show specific language
-                'page_content_type': page_content_type,
+                'page_content': page.get_content_obj(language, fallback=False),  # Show specific language
                 'node': page.node,
                 'ancestors': [node.item for node in page.node.get_cached_ancestors()],
                 'descendants': [node.item for node in page.node.get_cached_descendants()],
